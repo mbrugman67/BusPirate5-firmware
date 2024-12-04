@@ -139,10 +139,6 @@ static char const * const bs_ba[T_LAST_ITEM_ALWAYS_AT_THE_END]={
     [ T_UART_GLITCH_GLITCHED           ] = "Target glitch success!",
     [ T_UART_GLITCH_CANCELLED          ] = "Target glitch cancelled by button",
     [ T_UART_GLITCH_DONE               ] = "Target glitch count exceeded, no glitch :/",
-<<<<<<< HEAD
-    [ T_UART_TOOL_TIMEOUT              ] = "Timout waiting for glitch hardware :/",
-=======
->>>>>>> 088e855 (push while updating from main)
     [ T_UART_GLITCH_UNKNOWN            ] = "Target glitching stopped for unknown reason",
 	[ T_UART_GLITCH_SETUP_ERR          ] = "Error setting up glitcher - check uglitch.bp file",
     [ T_UART_ACTUAL_SPEED_BAUD         ] = "Stvarna brzina",

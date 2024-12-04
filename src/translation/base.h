@@ -144,10 +144,6 @@ enum T_translations{
     T_UART_GLITCH_GLITCHED,
     T_UART_GLITCH_CANCELLED,
     T_UART_GLITCH_DONE,
-<<<<<<< HEAD
-    T_UART_TOOL_TIMEOUT,
-=======
->>>>>>> 088e855 (push while updating from main)
     T_UART_GLITCH_UNKNOWN,
     T_UART_GLITCH_SETUP_ERR,
     T_UART_ACTUAL_SPEED_BAUD,

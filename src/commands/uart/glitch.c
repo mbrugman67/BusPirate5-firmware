@@ -253,19 +253,15 @@ static inline uint32_t get_ticks() {
  *   device to indicate its readiness.  For example, an
  *   EMP type device may need some time to recharge before
  *   its ready again.
- *
- * There is a PIO program that monitors the UART TX pin
- * to count edges to trigger the pulse.  That is also
- * set up here.
  *******************************************************/
 bool setup_hardware() {
     bio_put(M_UART_RTS, 0);
 
     bio_set_function(M_UART_GLITCH_TRG, GPIO_FUNC_SIO);
     bio_set_function(M_UART_GLITCH_RDY, GPIO_FUNC_SIO);
-    //bio_output(M_UART_GLITCH_TRG);
+    bio_output(M_UART_GLITCH_TRG);
     bio_input(M_UART_GLITCH_RDY);
-    //system_bio_claim(true, M_UART_GLITCH_TRG, BP_PIN_MODE, pin_labels[0]);
+    system_bio_claim(true, M_UART_GLITCH_TRG, BP_PIN_MODE, pin_labels[0]);
     system_bio_claim(true, M_UART_GLITCH_RDY, BP_PIN_MODE, pin_labels[1]);
 
     // set the trigger low right away
@@ -300,36 +296,6 @@ void uart_glitch_handler(struct command_result* res) {
     if (!ui_help_check_vout_vref()) {
         return;
     }
-
-    // the number of rising edges for the PIO to count before turning on
-    // the output is the number of high bits in the ASCII value of the
-    // glitch trigger character.  Count 'em up.
-    uint32_t pio_edge_count = 0;
-    bool last_bit_was_high = false;
-    for (uint8_t ii = 0; ii < 7; ++ii)
-    {
-        if (1U << ii & uart_glitch_config.glitch_trg) {
-            ++pio_edge_count;
-
-            // oddball case here... if two (or more) consecutive
-            // bits are high, the UART TX line doesn't go low
-            // in between, so we need to decrement back down
-            if (last_bit_was_high) --pio_edge_count;
-
-            last_bit_was_high = true;
-        } else {
-            last_bit_was_high = false;
-        }
-    }
-
-    // one more count for the stop bit (TODO - check for zero or two stop bits!)
-    ++pio_edge_count;
-
-    // (TODO - remove this)
-    printf("Number of edges for ASCII(%d) is %d\r\n",
-        uart_glitch_config.glitch_trg,
-        pio_edge_count);
-    // (TODO - end remove this)
 
     bool toolbar_state = system_config.terminal_ansi_statusbar_pause;
     bool pause_toolbar = !cmdln_args_find_flag('t' | 0x20);
@@ -377,8 +343,7 @@ void uart_glitch_handler(struct command_result* res) {
     while (!glitched && !cancelled && !done && !tool_timeout) {
         // check for external device ready; allow BP button to
         // exit
-        tick_start = get_ticks();
-        while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && !tool_timeout) {
+        while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && false) {
             if (button_get(0)) {
                 cancelled = true;
                 break;
@@ -407,9 +372,12 @@ void uart_glitch_handler(struct command_result* res) {
         memset(resp_string, 0, 20);
         resp_count = 0;
 
-        // do serial RX.  Go until we get a set number of characters or we timeout
-        tick_start = get_ticks();
-        while (uart_is_readable(M_UART_PORT) && !cancelled && ((get_ticks() - tick_start) < 50)) {
+        // start parsing the response from the device being glitched.
+        // Ignore return & linefeed chars until we get the first
+        // "real" character.  If that character is not the "normally
+        // expected bad password character", then we consider the
+        // glitch successful!
+        while (uart_is_readable(M_UART_PORT) && !cancelled) {
             c = uart_getc(M_UART_PORT);
 
             if (c != '\r' && c != '\n') {
@@ -421,24 +389,9 @@ void uart_glitch_handler(struct command_result* res) {
             // short delay to wait for next character
             busy_wait_us_32(100);
         }
-        bio_put(M_UART_GLITCH_TRG, 0);
 
-        printf("Attemp %d RX: %s\r\n", tries + 1, resp_string);
-
-        // parse through the response.  if our "normal bad password response" 
-        // character is present, then we didn't glitch :/
-        found = false;
-        for (uint8_t ii = 0; ii < strlen(resp_string); ++ii) {
-            if (resp_string[ii] == uart_glitch_config.fail_resp) {
-                found = true;
-            }
-        }
-
-        if (!found) {
-            glitched = true;
-            break;
-        }
-
+        printf("Resp string len >%d<\r\n", resp_count);
+        printf("Resp string >%s<\r\n", resp_string);
         // exit when button pressed.
         if (button_get(0)) {
             cancelled = true;
