@@ -125,6 +125,7 @@
     "T_UART_GLITCH_GLITCHED": "Target glitch success!",
     "T_UART_GLITCH_CANCELLED": "Target glitch cancelled by button",
     "T_UART_GLITCH_DONE": "Target glitch count exceeded, no glitch :/",
+    "T_UART_TOOL_TIMEOUT": "Timout waiting for glitch hardware :/",
     "T_UART_GLITCH_UNKNOWN": "Target glitching stopped for unknown reason",
 	"T_UART_GLITCH_SETUP_ERR": "Error setting up glitcher - check uglitch.bp file",
     "T_UART_ACTUAL_SPEED_BAUD": "Actual speed",
