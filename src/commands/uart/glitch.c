@@ -61,7 +61,6 @@ static const char* const usage[] = { "glitch\t[-h(elp)] [-c(onfig)]",
 typedef struct _uart_glitch_config {
     uint32_t glitch_trg;        // character sent from BP UART to trigger the glitch
     uint32_t glitch_delay;      // how long (us) after trigger stop bit to fire trigger
-    uint32_t glitch_length;     // how long (us) to keep trigger high
     uint32_t glitch_recycle;    // minimum time (ms) between one glitch cycle and the next
     uint32_t fail_resp;         // first character response from device on bad password
     uint32_t retry_count;       // number of times to try glitching before quitting
@@ -106,7 +105,6 @@ static uint32_t tick_count_ms = 0;
  ************************************************/
 static const struct prompt_item uart_glitch_trg_menu[] = { { T_UART_GLITCH_TRG_MENU_1 } };
 static const struct prompt_item uart_glitch_dly_menu[] = { { T_UART_GLITCH_DLY_MENU_1 } };
-static const struct prompt_item uart_glitch_len_menu[] = { { T_UART_GLITCH_LEN_MENU_1 } };
 static const struct prompt_item uart_glitch_cyc_menu[] = { { T_UART_GLITCH_CYC_MENU_1 } };
 static const struct prompt_item uart_glitch_fail_menu[] = { { T_UART_GLITCH_FAIL_MENU_1 } };
 static const struct prompt_item uart_glitch_cnt_menu[] = { { T_UART_GLITCH_CNT_MENU_1 } };
@@ -129,16 +127,7 @@ static const struct ui_prompt uart_menu[] = { [0] = { .description = T_UART_GLIT
                                                       .defval = 1,
                                                       .menu_action = 0,
                                                       .config = &prompt_int_cfg },
-                                              [2] = { .description = T_UART_GLITCH_LEN_MENU,
-                                                      .menu_items = uart_glitch_len_menu,
-                                                      .menu_items_count = count_of(uart_glitch_len_menu),
-                                                      .prompt_text = T_UART_GLITCH_LEN_PROMPT,
-                                                      .minval = 20,
-                                                      .maxval = 500,
-                                                      .defval = 20,
-                                                      .menu_action = 0,
-                                                      .config = &prompt_int_cfg },
-                                              [3] = { .description = T_UART_GLITCH_CYC_MENU,
+                                              [2] = { .description = T_UART_GLITCH_CYC_MENU,
                                                       .menu_items = uart_glitch_cyc_menu,
                                                       .menu_items_count = count_of(uart_glitch_cyc_menu),
                                                       .prompt_text = T_UART_GLITCH_CYC_PROMPT,
@@ -147,7 +136,7 @@ static const struct ui_prompt uart_menu[] = { [0] = { .description = T_UART_GLIT
                                                       .defval = 10,
                                                       .menu_action = 0,
                                                       .config = &prompt_int_cfg },
-                                              [4] = { .description = T_UART_GLITCH_FAIL_MENU,
+                                              [3] = { .description = T_UART_GLITCH_FAIL_MENU,
                                                       .menu_items = uart_glitch_fail_menu,
                                                       .menu_items_count = count_of(uart_glitch_fail_menu),
                                                       .prompt_text = T_UART_GLITCH_FAIL_PROMPT,
@@ -156,7 +145,7 @@ static const struct ui_prompt uart_menu[] = { [0] = { .description = T_UART_GLIT
                                                       .defval = 35,
                                                       .menu_action = 0,
                                                       .config = &prompt_int_cfg },
-                                              [5] = { .description = T_UART_GLITCH_CNT_MENU,
+                                              [4] = { .description = T_UART_GLITCH_CNT_MENU,
                                                       .menu_items = uart_glitch_cnt_menu,
                                                       .menu_items_count = count_of(uart_glitch_cnt_menu),
                                                       .prompt_text = T_UART_GLITCH_CNT_PROMPT,
@@ -170,7 +159,6 @@ static const struct ui_prompt uart_menu[] = { [0] = { .description = T_UART_GLIT
 void glitch_settings(void) {
     ui_prompt_mode_settings_int(GET_T(T_UART_GLITCH_TRG_MENU), uart_glitch_config.glitch_trg, "(ASCII)");
     ui_prompt_mode_settings_int(GET_T(T_UART_GLITCH_DLY_MENU), uart_glitch_config.glitch_delay, "us");
-    ui_prompt_mode_settings_int(GET_T(T_UART_GLITCH_LEN_MENU), uart_glitch_config.glitch_length, "us");
     ui_prompt_mode_settings_int(GET_T(T_UART_GLITCH_CYC_MENU), uart_glitch_config.glitch_recycle, "ms");
     ui_prompt_mode_settings_int(GET_T(T_UART_GLITCH_FAIL_MENU), uart_glitch_config.fail_resp, "ASCII");
     ui_prompt_mode_settings_int(GET_T(T_UART_GLITCH_CNT_MENU), uart_glitch_config.retry_count, 0x00);
@@ -185,7 +173,6 @@ uint32_t uart_glitch_setup(void) {
         // clang-format off
         { "$.trigger", &uart_glitch_config.glitch_trg, MODE_CONFIG_FORMAT_DECIMAL },
         { "$.delay", &uart_glitch_config.glitch_delay, MODE_CONFIG_FORMAT_DECIMAL },
-        { "$.length", &uart_glitch_config.glitch_length, MODE_CONFIG_FORMAT_DECIMAL },
         { "$.recycle", &uart_glitch_config.glitch_recycle, MODE_CONFIG_FORMAT_DECIMAL },
         { "$.failchar", &uart_glitch_config.fail_resp, MODE_CONFIG_FORMAT_DECIMAL },
         { "$.retries", &uart_glitch_config.retry_count, MODE_CONFIG_FORMAT_DECIMAL },
@@ -221,21 +208,15 @@ uint32_t uart_glitch_setup(void) {
     if (result.exit) {
         return 0;
     }
-    uart_glitch_config.glitch_length = temp;
+    uart_glitch_config.glitch_recycle = temp;
 
     ui_prompt_uint32(&result, &uart_menu[3], &temp);
     if (result.exit) {
         return 0;
     }
-    uart_glitch_config.glitch_recycle = temp;
-
-    ui_prompt_uint32(&result, &uart_menu[4], &temp);
-    if (result.exit) {
-        return 0;
-    }
     uart_glitch_config.fail_resp = temp;
 
-    ui_prompt_uint32(&result, &uart_menu[5], &temp);
+    ui_prompt_uint32(&result, &uart_menu[4], &temp);
     if (result.exit) {
         return 0;
     }
