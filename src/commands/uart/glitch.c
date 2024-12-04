@@ -9,11 +9,6 @@
  * be a short delay (specified by user), then an output will
  * be fired for a short time (again, specified by user).
  *
- * The glitch output is handled by a PIO to help keep timing
- * where we want it to be.  That's why you won't see the glitch
- * trigger output being directly controlled in the main glitch
- * loop.
- *
  * Typical usage:
  * + The target device is in a mode where it is awaiting a
  *   user-entered password over serial UART.  After the user
@@ -355,6 +350,7 @@ void uart_glitch_handler(struct command_result* res) {
     // + succeed in glitching the device
     // + user presses the BP button
     // + we exceeded the max number of tries
+    // + glitch hardware is not ready for more than 1 second (input B01)
     // Basic logic flow:
     // + wait until the device ready input is high
     // + serial out the glitch trigger character
@@ -396,11 +392,7 @@ void uart_glitch_handler(struct command_result* res) {
         memset(resp_string, 0, 20);
         resp_count = 0;
 
-        // start parsing the response from the device being glitched.
-        // Ignore return & linefeed chars until we get the first
-        // "real" character.  If that character is not the "normally
-        // expected bad password character", then we consider the
-        // glitch successful!
+        // do serial RX.  Go until we get a set number of characters or we timeout
         tick_start = get_ticks();
         while (uart_is_readable(M_UART_PORT) && !cancelled && ((get_ticks() - tick_start) < 50)) {
             c = uart_getc(M_UART_PORT);
@@ -418,6 +410,8 @@ void uart_glitch_handler(struct command_result* res) {
 
         printf("Attemp %d RX: %s\r\n", tries + 1, resp_string);
 
+        // parse through the response.  if our "normal bad password response" 
+        // character is present, then we didn't glitch :/
         found = false;
         for (uint8_t ii = 0; ii < strlen(resp_string); ++ii) {
             if (resp_string[ii] == uart_glitch_config.fail_resp) {
