@@ -377,7 +377,8 @@ void uart_glitch_handler(struct command_result* res) {
         // "real" character.  If that character is not the "normally
         // expected bad password character", then we consider the
         // glitch successful!
-        while (uart_is_readable(M_UART_PORT) && !cancelled) {
+        tick_start = get_ticks();
+        while (uart_is_readable(M_UART_PORT) && !cancelled && ((get_ticks() - tick_start) < 50)) {
             c = uart_getc(M_UART_PORT);
 
             if (c != '\r' && c != '\n') {
@@ -389,9 +390,22 @@ void uart_glitch_handler(struct command_result* res) {
             // short delay to wait for next character
             busy_wait_us_32(100);
         }
+        bio_put(M_UART_GLITCH_TRG, 0);
 
-        printf("Resp string len >%d<\r\n", resp_count);
-        printf("Resp string >%s<\r\n", resp_string);
+        printf("Attemp %d RX: %s\r\n", tries + 1, resp_string);
+
+        found = false;
+        for (uint8_t ii = 0; ii < strlen(resp_string); ++ii) {
+            if (resp_string[ii] == uart_glitch_config.fail_resp) {
+                found = true;
+            }
+        }
+
+        if (!found) {
+            glitched = true;
+            break;
+        }
+
         // exit when button pressed.
         if (button_get(0)) {
             cancelled = true;
