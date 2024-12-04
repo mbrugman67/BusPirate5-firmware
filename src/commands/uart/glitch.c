@@ -40,6 +40,7 @@
 
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include "pico/time.h"
 #include <stdint.h>
 #include "hardware/uart.h"
 #include "pirate.h"
@@ -53,10 +54,10 @@
 #include "ui/ui_prompt.h"
 #include "bytecode.h"
 #include "pirate/button.h"
-#include "glitch.pio.h"
-#include "pio_config.h"
 #include <string.h>
 
+#define SYSTICK_PREEMPT_PRIORITY 0
+#define SYSTICK_SUB_PRIORITY 0
 
 static const char* const usage[] = { "glitch\t[-h(elp)] [-c(onfig)]",
                                      "UART glitch generator",
@@ -81,7 +82,9 @@ static const char pin_labels[][5] = { "TRG", "RDY" };
 
 static struct _uart_glitch_config uart_glitch_config;
 
-static struct _pio_config uart_glitch_pio;
+
+static repeating_timer_t ticker;
+static uint32_t tick_count_ms = 0;
 
 /*************************************************
  *    CONFIGURATION PARAMETERS FOR GLITCHING     *
@@ -248,6 +251,24 @@ uint32_t uart_glitch_setup(void) {
     storage_save_mode(config_file, config_t, count_of(config_t));
 }
 
+bool tick_inc(repeating_timer_t* ticker) {
+    tick_count_ms++;
+    return (true);
+}
+
+void ticker_init() {
+    tick_count_ms = 0;
+    add_repeating_timer_ms(-1, tick_inc, NULL, &ticker);
+}
+
+void ticker_kill() {
+    cancel_repeating_timer(&ticker);
+}
+
+static inline uint32_t get_ticks() {
+    return (tick_count_ms);
+}
+
 /********************************************************
  * Bus Pirate pins 0 and 1 are used for glitchhing:
  * - Pin 0 is the triggered glitch output (to be used to
@@ -256,54 +277,22 @@ uint32_t uart_glitch_setup(void) {
  *   device to indicate its readiness.  For example, an
  *   EMP type device may need some time to recharge before
  *   its ready again.
- *
- * There is a PIO program that monitors the UART TX pin
- * to count edges to trigger the pulse.  That is also
- * set up here.
  *******************************************************/
 bool setup_hardware() {
     bio_put(M_UART_RTS, 0);
 
-    //bio_set_function(M_UART_GLITCH_TRG, GPIO_FUNC_SIO);
+    bio_set_function(M_UART_GLITCH_TRG, GPIO_FUNC_SIO);
     bio_set_function(M_UART_GLITCH_RDY, GPIO_FUNC_SIO);
-    //bio_output(M_UART_GLITCH_TRG);
+    bio_output(M_UART_GLITCH_TRG);
     bio_input(M_UART_GLITCH_RDY);
-    //system_bio_claim(true, M_UART_GLITCH_TRG, BP_PIN_MODE, pin_labels[0]);
+    system_bio_claim(true, M_UART_GLITCH_TRG, BP_PIN_MODE, pin_labels[0]);
     system_bio_claim(true, M_UART_GLITCH_RDY, BP_PIN_MODE, pin_labels[1]);
 
     // set the trigger low right away
-    //bio_put(M_UART_GLITCH_TRG, 0);
+    bio_put(M_UART_GLITCH_TRG, 0);
 
-    // set up PIO
-    uart_glitch_pio.pio = PIO_MODE_PIO;
-    uart_glitch_pio.program = &uart_glitch_program;
-
-    if (!pio_claim_free_sm_and_add_program(
-        uart_glitch_pio.program,
-        &uart_glitch_pio.pio,
-        &uart_glitch_pio.sm,
-        &uart_glitch_pio.offset
-    )) {
-        printf("%sUnable to load PIO program!%s\r\n",
-            ui_term_color_error(), ui_term_color_reset());
-        return (false);
-    }
-
-    uart_glitch_program_init(
-        uart_glitch_pio.pio,
-        uart_glitch_pio.sm,
-        uart_glitch_pio.offset,
-        bio2bufiopin[M_UART_GLITCH_TRG],
-        bio2bufiopin[M_UART_TX]);
-
-    printf("M_UART_GLITCH_TRG %d (%d), M_UART_TX %d (%d)\r\n",
-        M_UART_GLITCH_TRG, bio2bufiopin[M_UART_GLITCH_TRG],
-        M_UART_TX, bio2bufiopin[M_UART_TX]);
-
-    printf("Install glitch pio: pio=%d, sm=%d, offset=%d\r\n",
-        PIO_NUM(uart_glitch_pio.pio),
-        uart_glitch_pio.sm,
-        uart_glitch_pio.offset);
+    // set up timer
+    ticker_init();
 
     return (true);
 }
@@ -311,18 +300,11 @@ bool setup_hardware() {
 void teardown_hardware() {
     bio_put(M_UART_RTS, 1);
 
-    //system_bio_claim(false, M_UART_GLITCH_TRG, BP_PIN_MODE, 0);
+    system_bio_claim(false, M_UART_GLITCH_TRG, BP_PIN_MODE, 0);
     system_bio_claim(false, M_UART_GLITCH_RDY, BP_PIN_MODE, 0);
 
-    pio_remove_program_and_unclaim_sm(
-        uart_glitch_pio.program,
-        uart_glitch_pio.pio,
-        uart_glitch_pio.sm,
-        uart_glitch_pio.offset);
-
-    uart_glitch_pio.sm = uart_glitch_pio.offset = 0;
-
-    printf("Remove glitch pio\r\n");
+    // kill the timer
+    ticker_kill();
 }
 
 void uart_glitch_handler(struct command_result* res) {
@@ -338,36 +320,6 @@ void uart_glitch_handler(struct command_result* res) {
     if (!ui_help_check_vout_vref()) {
         return;
     }
-
-    // the number of rising edges for the PIO to count before turning on
-    // the output is the number of high bits in the ASCII value of the
-    // glitch trigger character.  Count 'em up.
-    uint32_t pio_edge_count = 0;
-    bool last_bit_was_high = false;
-    for (uint8_t ii = 0; ii < 7; ++ii)
-    {
-        if (1U << ii & uart_glitch_config.glitch_trg) {
-            ++pio_edge_count;
-
-            // oddball case here... if two (or more) consecutive
-            // bits are high, the UART TX line doesn't go low
-            // in between, so we need to decrement back down
-            if (last_bit_was_high) --pio_edge_count;
-
-            last_bit_was_high = true;
-        } else {
-            last_bit_was_high = false;
-        }
-    }
-
-    // one more count for the stop bit (TODO - check for zero or two stop bits!)
-    ++pio_edge_count;
-
-    // (TODO - remove this)
-    printf("Number of edges for ASCII(%d) is %d\r\n",
-        uart_glitch_config.glitch_trg,
-        pio_edge_count);
-    // (TODO - end remove this)
 
     bool toolbar_state = system_config.terminal_ansi_statusbar_pause;
     bool pause_toolbar = !cmdln_args_find_flag('t' | 0x20);
@@ -386,14 +338,17 @@ void uart_glitch_handler(struct command_result* res) {
     printf("\r\n%s%s%s\r\n", ui_term_color_notice(), GET_T(T_HELP_UART_GLITCH_EXIT), ui_term_color_reset());
 
     bool glitched = false;
+    bool tool_timeout = false;
     bool cancelled = false;
     bool done = false;
+    bool found = false;
     uint32_t tries = 0;
     char c;
     char trigger_char = (char)uart_glitch_config.glitch_trg;
     char fail_resp_char = (char)uart_glitch_config.fail_resp;
     char resp_string[40];
     size_t resp_count;
+    uint32_t tick_start = 0;
 
     // The main glitch loop starts here
     // keep going until we either:
@@ -408,24 +363,27 @@ void uart_glitch_handler(struct command_result* res) {
     //   password character" then assume glitch failed
     // + increment/test the max retries count
     // + wait for the backoff period before retrying
-    while (!glitched && !cancelled && !done) {
+    while (!glitched && !cancelled && !done && !tool_timeout) {
         // check for external device ready; allow BP button to
         // exit
+        tick_start = get_ticks();
         while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && false) {
             if (button_get(0)) {
                 cancelled = true;
+                break;
             }
-        }
 
-        if (!uart_is_writable(M_UART_PORT)) {
-            printf ("%sPort is not writeable!%s\r\n", ui_term_color_error(), ui_term_color_reset());
-            break;
+            if (get_ticks() - tick_start > 1000) {
+                tool_timeout = true;
+                break;
+            }
         }
 
         // serial out the trigger character
         uart_putc_raw(M_UART_PORT, trigger_char);
 
-        printf("\r\n%sOutput %d%s\r\n", ui_term_color_info(), trigger_char, ui_term_color_reset());
+        busy_wait_us(uart_glitch_config.glitch_delay);
+        bio_put(M_UART_GLITCH_TRG, 1);
 
         // wait for a char to be RX'd.  Allow the button
         // to break us out, if necessary
@@ -434,7 +392,6 @@ void uart_glitch_handler(struct command_result* res) {
                 cancelled = true;
             }
         }
-        printf("\r\n");
 
         memset(resp_string, 0, 20);
         resp_count = 0;
@@ -444,7 +401,8 @@ void uart_glitch_handler(struct command_result* res) {
         // "real" character.  If that character is not the "normally
         // expected bad password character", then we consider the
         // glitch successful!
-        while (uart_is_readable(M_UART_PORT) && !cancelled) {
+        tick_start = get_ticks();
+        while (uart_is_readable(M_UART_PORT) && !cancelled && ((get_ticks() - tick_start) < 50)) {
             c = uart_getc(M_UART_PORT);
 
             if (c != '\r' && c != '\n') {
@@ -456,9 +414,22 @@ void uart_glitch_handler(struct command_result* res) {
             // short delay to wait for next character
             busy_wait_us_32(100);
         }
+        bio_put(M_UART_GLITCH_TRG, 0);
 
-        printf("Resp string len >%d<\r\n", resp_count);
-        printf("Resp string >%s<\r\n", resp_string);
+        printf("Attemp %d RX: %s\r\n", tries + 1, resp_string);
+
+        found = false;
+        for (uint8_t ii = 0; ii < strlen(resp_string); ++ii) {
+            if (resp_string[ii] == uart_glitch_config.fail_resp) {
+                found = true;
+            }
+        }
+
+        if (!found) {
+            glitched = true;
+            break;
+        }
+
         // exit when button pressed.
         if (button_get(0)) {
             cancelled = true;
@@ -482,6 +453,8 @@ void uart_glitch_handler(struct command_result* res) {
     // why did we break out of the glitch loop?
     if (glitched) {
         printf("%s%s%s\r\n", ui_term_color_notice(), GET_T(T_UART_GLITCH_GLITCHED), ui_term_color_reset());
+    } else if (tool_timeout) {
+        printf("%s%s%s\r\n", ui_term_color_error(), GET_T(T_UART_TOOL_TIMEOUT), ui_term_color_reset());
     } else if (cancelled) {
         printf("%s%s%s\r\n", ui_term_color_notice(), GET_T(T_UART_GLITCH_CANCELLED), ui_term_color_reset());
     } else if (done) {
