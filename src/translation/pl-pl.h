@@ -122,11 +122,14 @@ static char const * const pl_pl[T_LAST_ITEM_ALWAYS_AT_THE_END]={
     [ T_UART_GLITCH_DLY_MENU_1         ] = "Delay time in us",
     [ T_UART_GLITCH_DLY_PROMPT         ] = "Glitch trigger delay (1)",
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     [ T_UART_GLITCH_LEN_MENU           ] = "Glitch time",
     [ T_UART_GLITCH_LEN_MENU_1         ] = "20-500",
     [ T_UART_GLITCH_LEN_PROMPT         ] = "Glitch output time us (100)",
 >>>>>>> 088e855 (push while updating from main)
+=======
+>>>>>>> 6404814 (remove glitch time menu item)
     [ T_UART_GLITCH_CYC_MENU           ] = "Glitch cycle delay",
     [ T_UART_GLITCH_CYC_MENU_1         ] = "10-1000",
     [ T_UART_GLITCH_CYC_PROMPT         ] = "Minimum time between glitch cycles in ms (10)",

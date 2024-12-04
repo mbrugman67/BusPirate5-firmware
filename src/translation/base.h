@@ -127,11 +127,14 @@ enum T_translations{
     T_UART_GLITCH_DLY_MENU_1,
     T_UART_GLITCH_DLY_PROMPT,
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     T_UART_GLITCH_LEN_MENU,
     T_UART_GLITCH_LEN_MENU_1,
     T_UART_GLITCH_LEN_PROMPT,
 >>>>>>> 088e855 (push while updating from main)
+=======
+>>>>>>> 6404814 (remove glitch time menu item)
     T_UART_GLITCH_CYC_MENU,
     T_UART_GLITCH_CYC_MENU_1,
     T_UART_GLITCH_CYC_PROMPT,
