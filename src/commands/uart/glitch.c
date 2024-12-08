@@ -344,7 +344,7 @@ void uart_glitch_handler(struct command_result* res) {
         // check for external device ready; allow BP button to
         // exit
         tick_start = get_ticks();
-        while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && false) {
+        while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && !tool_timeout) {
             if (button_get(0)) {
                 cancelled = true;
                 break;
