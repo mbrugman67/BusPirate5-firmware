@@ -1,0 +1,31 @@
+;
+; glitch.pio
+; 
+; PIO program to control output to glitch device (EMP blaster, MOSFET for power glitch, etc.)
+;
+;
+
+.define EDGE_COUNT  2
+.define DELAY_COUNT 31
+
+.program uart_glitch
+
+.side_set 1 opt
+
+; IN pin 0 is mapped to the GPIO used as UART TX.
+start:
+    set x, EDGE_COUNT           ; preload bit count
+    set y, DELAY_COUNT          ; preload "on" time loop
+
+edge_loop:
+    wait 0 pin 0                ; stall until UART TX line goes low
+    wait 1 pin 0                ; stall until UART TX line goes high
+
+    jmp x-- edge_loop side 1    ; keep going until we get all of the pulses
+
+on_loop:
+    nop                         ; hang out for 100 cycles
+
+    jmp y-- on_loop side 0      ; decrement loop counter
+
+    jmp start                   ; go back and wait for more

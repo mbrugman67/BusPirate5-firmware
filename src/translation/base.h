@@ -126,6 +126,12 @@ enum T_translations{
     T_UART_GLITCH_DLY_MENU,
     T_UART_GLITCH_DLY_MENU_1,
     T_UART_GLITCH_DLY_PROMPT,
+<<<<<<< HEAD
+=======
+    T_UART_GLITCH_LEN_MENU,
+    T_UART_GLITCH_LEN_MENU_1,
+    T_UART_GLITCH_LEN_PROMPT,
+>>>>>>> 088e855 (push while updating from main)
     T_UART_GLITCH_CYC_MENU,
     T_UART_GLITCH_CYC_MENU_1,
     T_UART_GLITCH_CYC_PROMPT,
@@ -138,7 +144,10 @@ enum T_translations{
     T_UART_GLITCH_GLITCHED,
     T_UART_GLITCH_CANCELLED,
     T_UART_GLITCH_DONE,
+<<<<<<< HEAD
     T_UART_TOOL_TIMEOUT,
+=======
+>>>>>>> 088e855 (push while updating from main)
     T_UART_GLITCH_UNKNOWN,
     T_UART_GLITCH_SETUP_ERR,
     T_UART_ACTUAL_SPEED_BAUD,
