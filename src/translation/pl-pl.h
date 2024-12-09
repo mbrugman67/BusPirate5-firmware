@@ -123,6 +123,7 @@ static char const * const pl_pl[T_LAST_ITEM_ALWAYS_AT_THE_END]={
     [ T_UART_GLITCH_DLY_PROMPT         ] = "Glitch trigger delay (1)",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     [ T_UART_GLITCH_LEN_MENU           ] = "Glitch time",
     [ T_UART_GLITCH_LEN_MENU_1         ] = "20-500",
@@ -130,6 +131,8 @@ static char const * const pl_pl[T_LAST_ITEM_ALWAYS_AT_THE_END]={
 >>>>>>> 088e855 (push while updating from main)
 =======
 >>>>>>> 6404814 (remove glitch time menu item)
+=======
+>>>>>>> 957f586b1ba864bf91ab0e1029ff7d0f1907801b
     [ T_UART_GLITCH_CYC_MENU           ] = "Glitch cycle delay",
     [ T_UART_GLITCH_CYC_MENU_1         ] = "10-1000",
     [ T_UART_GLITCH_CYC_PROMPT         ] = "Minimum time between glitch cycles in ms (10)",
@@ -142,6 +145,10 @@ static char const * const pl_pl[T_LAST_ITEM_ALWAYS_AT_THE_END]={
     [ T_UART_GLITCH_GLITCHED           ] = "Target glitch success!",
     [ T_UART_GLITCH_CANCELLED          ] = "Target glitch cancelled by button",
     [ T_UART_GLITCH_DONE               ] = "Target glitch count exceeded, no glitch :/",
+<<<<<<< HEAD
+=======
+    [ T_UART_TOOL_TIMEOUT              ] = "Timout waiting for glitch hardware :/",
+>>>>>>> 957f586b1ba864bf91ab0e1029ff7d0f1907801b
     [ T_UART_GLITCH_UNKNOWN            ] = "Target glitching stopped for unknown reason",
 	[ T_UART_GLITCH_SETUP_ERR          ] = "Error setting up glitcher - check uglitch.bp file",
     [ T_UART_ACTUAL_SPEED_BAUD         ] = "Faktyczna szerokość transmisji",
