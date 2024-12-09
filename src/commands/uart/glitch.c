@@ -343,17 +343,8 @@ void uart_glitch_handler(struct command_result* res) {
     while (!glitched && !cancelled && !done && !tool_timeout) {
         // check for external device ready; allow BP button to
         // exit
-<<<<<<< HEAD
-<<<<<<< HEAD
-        while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && false) {
-=======
         tick_start = get_ticks();
         while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && !tool_timeout) {
->>>>>>> 15c9641 (re-enable timeout code)
-=======
-        tick_start = get_ticks();
-        while (!bio_get(M_UART_GLITCH_RDY) && !cancelled && !tool_timeout) {
->>>>>>> 957f586b1ba864bf91ab0e1029ff7d0f1907801b
             if (button_get(0)) {
                 cancelled = true;
                 break;
@@ -382,15 +373,11 @@ void uart_glitch_handler(struct command_result* res) {
         memset(resp_string, 0, 20);
         resp_count = 0;
 
-<<<<<<< HEAD
         // start parsing the response from the device being glitched.
         // Ignore return & linefeed chars until we get the first
         // "real" character.  If that character is not the "normally
         // expected bad password character", then we consider the
         // glitch successful!
-=======
-        // do serial RX.  Go until we get a set number of characters or we timeout
->>>>>>> 957f586b1ba864bf91ab0e1029ff7d0f1907801b
         tick_start = get_ticks();
         while (uart_is_readable(M_UART_PORT) && !cancelled && ((get_ticks() - tick_start) < 50)) {
             c = uart_getc(M_UART_PORT);
@@ -408,11 +395,8 @@ void uart_glitch_handler(struct command_result* res) {
 
         printf("Attemp %d RX: %s\r\n", tries + 1, resp_string);
 
-<<<<<<< HEAD
-=======
         // parse through the response.  if our "normal bad password response" 
         // character is present, then we didn't glitch :/
->>>>>>> 957f586b1ba864bf91ab0e1029ff7d0f1907801b
         found = false;
         for (uint8_t ii = 0; ii < strlen(resp_string); ++ii) {
             if (resp_string[ii] == uart_glitch_config.fail_resp) {
