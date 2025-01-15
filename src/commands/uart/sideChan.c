@@ -233,7 +233,7 @@ void uart_side_chan_handler(struct command_result* res) {
 
     password[0] = alphabet[alphabet_posn];
 
-    const char tests[][15] = {"A", "AA", "H", "HA", "HI", "HIC", "HI2015CHILLL"};
+    const char tests[][15] = {"A", "AA", "H", "HA", "HI", "HIC", "HI2105CHIM"};
     uint32_t tests_count = 7;
     uint32_t this_test = 0;
     uint32_t this_test_iteration = 0;
