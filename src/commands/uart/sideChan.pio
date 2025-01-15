@@ -1,0 +1,52 @@
+; This PIO pogram is used to gather side channel information from a
+; UART.  At the end of the transmit trigger, the state machine will
+; monitor the RX line until it goes low while continually decrementing
+; a counter.
+;
+; Calling program can compare the counter value based on what chars
+; were sent to the target device via UART to see if there are any
+; timing differences
+
+.program uart_sidechan
+
+.wrap_target
+    pull                    ; get max count value
+    mov x OSR               ; store it in X
+    pull                    ; get the number of edges in the trigger character
+    mov y OSR               ; store it in Y
+
+return_loop:
+    wait 0 pin 0            ; idle state of TX line is high, wait for it to go low
+    wait 1 pin 0            ; wait for it to go back up
+    jmp y-- return_loop     ; decrement
+
+timer_loop:
+    jmp pin count           ; if the RX pin is still high, go decrement the counter
+    jmp done                ; RX pin is low, done timing
+
+count:
+    jmp x-- timer_loop      ; decrement the counter
+                            ; if it hits zero, we're also done... :/
+done:
+    mov isr x               ; save the timer value
+    push                    ; send it back to caller program
+
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+static inline void uart_sidechan_program_init(PIO pio, uint sm, uint offset, uint tx_pin, uint rx_pin) {
+    pio_sm_config c = uart_sidechan_program_get_default_config(offset);
+
+    sm_config_set_in_pins(&c, tx_pin);
+    sm_config_set_jmp_pin(&c, rx_pin);
+
+    pio_sm_set_consecutive_pindirs(pio, sm, tx_pin, 1, false);
+    pio_sm_set_consecutive_pindirs(pio, sm, rx_pin, 1, false);
+
+    //sm_config_set_clkdiv(&c, 0.9);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
