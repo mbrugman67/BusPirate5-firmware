@@ -1,7 +1,7 @@
 # Trying to do side channel scanning with Bus Pirate 5
 tl;dr - it isn't going to work with this target (an ARM V8 running at a decent clock speed).
 ## Theory
-In this case, the target is in the bootloader (Das U-Boot), and is prompting for a password over the serial UART channel.  The password code is poorly written and will allow unlimited attempts with no time delay penalties.
+In this case, the target is in the bootloader (Das U-Boot 2020.01 (Oct 20 2023 - 09:59:46 +0800)), and is prompting for a password over the serial UART channel.  The password code is poorly written and will allow unlimited attempts with no time delay penalties.
 
 I know from reverse engineering the code in question that the password routine is simply using `strcmp()` to check the password.  From that, we should be able to gather some side channel information based on the time it takes for the target to come back after every password attempt.  `strcmp()` is not a constant-time function - it will return as soon as it gets a non-matching character.  The longer the time it takes, the more correctly matching characters (in correct order) we have sent.
 
@@ -95,10 +95,10 @@ Sending >HIC< iteration 4 count = 501
 Sending >HIC< iteration 5 count = 502
 -->Average: 496.6
 
-Sending >HI2015CHILLL< iteration 1 count = 502
-Sending >HI2015CHILLL< iteration 2 count = 488
-Sending >HI2015CHILLL< iteration 3 count = 506
-Sending >HI2015CHILLL< iteration 4 count = 491
-Sending >HI2015CHILLL< iteration 5 count = 508
--->Average: 499.0  
+Sending >HI2105CHIM< iteration 1 count = 509
+Sending >HI2105CHIM< iteration 2 count = 506
+Sending >HI2105CHIM< iteration 3 count = 500
+Sending >HI2105CHIM< iteration 4 count = 498
+Sending >HI2105CHIM< iteration 5 count = 493
+-->Average: 501.2  
 ```  
