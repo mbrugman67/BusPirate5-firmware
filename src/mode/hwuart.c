@@ -19,6 +19,7 @@
 #include "commands/uart/bridge.h"
 #include "commands/uart/monitor.h"
 #include "commands/uart/glitch.h"
+#include "commands/uart/sideChan.h"
 
 static struct _uart_mode_config mode_config;
 static struct command_attributes periodic_attributes;
@@ -45,6 +46,11 @@ const struct _mode_command_struct hwuart_commands[] = {
         .description_text=T_HELP_UART_GLITCH, 
         .supress_fala_capture=false
     },
+    {   .command="sidechan",
+        .func=&uart_side_chan_handler,
+        .description_text=T_HELP_SIDECHAN_GLITCH,
+        .supress_fala_capture=false
+    }
 };
 const uint32_t hwuart_commands_count = count_of(hwuart_commands);
 
