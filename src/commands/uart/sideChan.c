@@ -258,7 +258,7 @@ void uart_side_chan_handler(struct command_result* res) {
 
         busy_wait_us_32(200 * strlen(tests[this_test]));
 
-        // the statemachie is currently stalled waiting for these tow values to 
+        // the statemachie is currently stalled waiting for these two values to
         // be stuffed into the FIFO - the first is the preload for the counter
         // which is set to max UINT_16, and the other is the number of edges to 
         // 
