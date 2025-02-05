@@ -52,6 +52,7 @@ static const struct ui_help_options options_rx[] = {
 };
 
 //returns true (success) false (failed)
+//TODO: check for cnt overflow! this is a potential buffer overflow
 bool irtx_transmit(char* buffer){
 	//parse the csv formatted values into 16 bit value pairs
 	uint32_t data[128];
@@ -65,6 +66,7 @@ bool irtx_transmit(char* buffer){
 			return false;
 		}
 		cnt++;
+
 	}
 	cnt++;
 
@@ -82,38 +84,41 @@ bool irtx_transmit(char* buffer){
 
 	//parse the ascii values into 16 bit values, shove in a 32bit word
 	//would be much nicer to use pointers here, but it would be a glob of unreadable slop
+	bool mark=true;
 	while(true){
 		uint16_t value=0;
 		while(buffer[cnt]!=','){
 			if(buffer[cnt]==0x00||buffer[cnt]<'0'||buffer[cnt]>'9'){
-				printf("Unable to find end of MARK data (,) in AIR packet\r\n");
+				printf("Unable to find end of MARK/SPACE data (,) in AIR packet\r\n");
 				return false;
 			}
 			value*=10;
 			value+=buffer[cnt]-0x30;
 			cnt++;
 		}
-		data[datacnt] = (value<<16);//upper 16 bits are the mark
-		cnt++;
-		value=0;
-		while(buffer[cnt]!=','){
-			if(buffer[cnt]==0x00||buffer[cnt]<'0'||buffer[cnt]>'9'){
-				printf("Unable to find end of SPACE data (,) in AIR packet\r\n");
+		if(mark){
+			data[datacnt] = (value<<16);//upper 16 bits are the mark
+			mark = false;
+		}else{
+			data[datacnt] |= value;
+			datacnt++;
+			if(datacnt>=count_of(data)){
+				printf("Too many MARK/SPACE pairs in AIR packet, max 127\r\n");
 				return false;
-			}
-			value*=10;
-			value+=buffer[cnt]-0x30;
-			cnt++;
-		}	
-		data[datacnt] |= value;
-		datacnt++;
-		if(datacnt>127){
-			printf("Too many MARK/SPACE pairs in AIR packet, max 127\r\n");
-			return false;
+			}			
+			mark = true;
 		}
-		cnt++;
+		cnt++; //if 0x00 will be tossed in the next loop
 		if(buffer[cnt]==';'){
 			//found end of AIR packet
+            if(!mark){ //end with a SPACE if not included in AIR packet
+                data[datacnt] |= 0xffff;
+                datacnt++;
+                if(datacnt>=count_of(data)){
+                    printf("Too many MARK/SPACE pairs in AIR packet, max 127\r\n");
+					return false;
+                }                
+            }			
 			break;
 		}
 	}
@@ -284,6 +289,7 @@ void irrx_handler(struct command_result *res){
 		uint32_t buffer[128];
 		uint16_t pairs=0;
 		float mod_freq;
+		uint16_t us;
 		uint8_t air_buffer[512];
 		//wait for complete IR packet from irio_pio
 		printf("\r\nListening for IR packets (x to exit)...\r\n");
@@ -291,7 +297,7 @@ void irrx_handler(struct command_result *res){
 		irio_pio_rxtx_drain_fifo();
 		//display captured packet
 		while(true){
-			if(irio_pio_rx_frame_buf(&mod_freq, &pairs, buffer)) break;
+			if(irio_pio_rx_frame_buf(&mod_freq, &us, &pairs, buffer)) break;
 			// any key to exit
 			char c;
 		    if (rx_fifo_try_get(&c)) {
@@ -303,10 +309,10 @@ void irrx_handler(struct command_result *res){
 		}
 		uint8_t mod_freq_int=(uint8_t)roundf(mod_freq/1000.0f);
 		uint16_t sn_cnt = snprintf(air_buffer, sizeof(air_buffer), "$%u:", mod_freq_int);
-		for(uint16_t i=0; i<pairs; i++){
+		for(uint16_t i=0; i<pairs-1; i++){
 			sn_cnt+=snprintf(&air_buffer[sn_cnt], sizeof(air_buffer)-sn_cnt, "%u,%u,", (uint16_t)(buffer[i]>>16), (uint16_t)(buffer[i]&0xffff));
 		}
-		sn_cnt += snprintf(&air_buffer[sn_cnt], sizeof(air_buffer)-sn_cnt, ";\r\n");
+		sn_cnt += snprintf(&air_buffer[sn_cnt], sizeof(air_buffer)-sn_cnt, "%u,;\r\n", buffer[pairs-1]>>16);
 		if(sn_cnt>sizeof(air_buffer)){
 			printf("AIR packet too long, max 512 characters\r\n");
 			res->error = true;

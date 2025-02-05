@@ -107,6 +107,8 @@ set(bp5_common
         commands/global/image.h
         commands/global/dump.c
         commands/global/dump.h
+        commands/global/ovrclk.c 
+        commands/global/ovrclk.h        
         
         # HiZ
         mode/hiz.h
@@ -226,6 +228,15 @@ set(bp5_common
         lib/picofreq/picofreq.h
         commands/infrared/irtxrx.c
         commands/infrared/irtxrx.h
+
+        # JTAG
+        mode/jtag.h
+        mode/jtag.c
+        commands/jtag/bluetag.c
+        commands/jtag/bluetag.h
+        lib/bluetag/src/blueTag.c
+        lib/bluetag/src/blueTag.h
+        lib/bluetag/src/jep106.inc
 
         # DUMMY MODE
         mode/dummy1.c
@@ -395,12 +406,18 @@ set (bp5_rtt
         lib/rtt/RTT/SEGGER_RTT_printf.c
 )
 
+set (rp2350_common
+        commands/global/otpdump.h 
+        commands/global/otpdump.c
+)
+
 
 if(${PICO_PLATFORM} MATCHES "rp2350")
         add_executable(bus_pirate6
                 ${bp5_common}
                 ${bp5_nandflash}
                 ${bp5_rtt}
+                ${rp2350_common}
                 platform/bpi6-rev1.h
                 platform/bpi6-rev1.c
                 display/robot6x16.h
@@ -418,6 +435,7 @@ if(${PICO_PLATFORM} MATCHES "rp2350")
                 ${bp5_common}
                 ${bp5_nandflash}
                 ${bp5_rtt}
+                ${rp2350_common}
                 platform/bpi-rev10.h
                 platform/bpi-rev10.c 
                 pirate/shift.h
