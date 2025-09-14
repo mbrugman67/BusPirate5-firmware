@@ -347,6 +347,14 @@ set(buspirate_common
         lib/bluetag/src/blueTag.c
         lib/bluetag/src/blueTag.h
         lib/bluetag/src/jep106.inc
+        lib/nuvoton/common/isp_common.h
+        lib/nuvoton/buspirate.c
+        lib/nuvoton/delay.h
+        lib/nuvoton/device_common.h
+        lib/nuvoton/device_common.c
+        lib/nuvoton/n51_icp.h
+        lib/nuvoton/n51_icp.c
+        lib/nuvoton/n51_pgm.h
 
         # DUMMY MODE
         mode/dummy1.c
