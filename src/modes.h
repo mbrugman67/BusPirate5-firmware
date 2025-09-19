@@ -46,6 +46,9 @@ enum {
 #ifdef BP_USE_USBPD
     USBPD,
 #endif
+#ifdef BP_USE_N51
+    N51,
+#endif
 #ifdef BP_USE_DUMMY1
     DUMMY1,
 #endif

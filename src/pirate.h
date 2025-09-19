@@ -54,7 +54,7 @@
 #define     BP_USE_JTAG
 //#define BP_USE_I2S
 // #define     BP_USE_USBPD
-
+#define BP_USE_N51
 // enable display support
 // #define		DISPLAY_USE_HD44780	// is always enabled
 // #define		DISPLAY_USE_ST7735

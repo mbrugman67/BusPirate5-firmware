@@ -42,13 +42,18 @@
 
 static const char pin_labels[][5] = {"RST", "CLK", "DAT", "TRG"};
 
+static uint8_t pgm_init_done = false;
 /*
 static int8_t dat_dir = -1;
 static int8_t dat = -1;
 static int8_t rst = -1;
 static int8_t clk = -1;
-static uint8_t pgm_init_done = false;
 */
+uint8_t N51PGM_is_init()
+{
+	return (pgm_init_done);
+}
+
 int N51PGM_init(void)
 {
 	// allocate the 3 I/O points
@@ -68,7 +73,9 @@ int N51PGM_init(void)
     bio_put(M_NUV_CLOCK, 0);
     bio_put(M_NUV_TRIGGER, 0);
 
-	return 0;
+	pgm_init_done = true;
+
+	return (0);
 }
 
 void N51PGM_set_dat(uint8_t val)
@@ -84,6 +91,7 @@ uint8_t N51PGM_get_dat(void)
 void N51PGM_set_rst(uint8_t val)
 {
 	bio_put(M_NUV_RESET, val);
+	bio_put(M_NUV_TRIGGER, val);
 }
 
 void N51PGM_set_clk(uint8_t val)
@@ -122,11 +130,13 @@ void N51PGM_deinit(uint8_t leave_reset_high)
 	}
 
 	N51PGM_release_non_rst_pins();
+
+	pgm_init_done = false;
 }
 
-void N51PGM_set_trigger(void)
+void N51PGM_set_trigger(uint8_t val)
 {
-	bio_put(M_NUV_TRIGGER, true);
+	bio_put(M_NUV_TRIGGER, (bool)val);
 }
 
 uint32_t N51PGM_usleep(uint32_t usec)

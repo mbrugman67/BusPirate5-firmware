@@ -59,6 +59,9 @@
 #ifdef BP_USE_I2S
 #include "mode/i2s.h"
 #endif
+#ifdef BP_USE_N51
+#include "mode/nuvoton51.h"
+#endif
 
 // nulfuncs
 // these are the dummy functions when something ain't used
@@ -598,6 +601,36 @@ struct _mode modes[] = {
         .mode_commands_count = &usbpd_commands_count, // mode specific commands count
         .protocol_get_speed = nullfunc7_no_error,     // get the current speed setting of the protocol
         .protocol_preflight_sanity_check = NULL,      // sanity check before executing syntax
+    },
+#endif
+#ifdef BP_USE_N51
+    [N51] = {
+        .protocol_name = "Nuvo8051",                   // friendly name (promptname)
+        .protocol_start = nullfunc1_temp,               // start
+        .protocol_start_alt = nullfunc1_temp,           // start with read
+        .protocol_stop = nullfunc1_temp,                // stop
+        .protocol_stop_alt = nullfunc1_temp,            // stop with read
+        .protocol_write = nullfunc1_temp,               // send(/read) max 32 bit
+        .protocol_read = nullfunc1_temp,                // read max 32 bit
+        .protocol_clkh = nullfunc1_temp,                // set clk high
+        .protocol_clkl = nullfunc1_temp,                // set clk low
+        .protocol_dath = nullfunc1_temp,                // set dat hi
+        .protocol_datl = nullfunc1_temp,                // set dat lo
+        .protocol_dats = nullfunc1_temp,                // toggle dat (?)
+        .protocol_tick_clock = nullfunc1_temp,          // toggle clk (?)
+        .protocol_bitr = nullfunc1_temp,                // read 1 bit (?)
+        .protocol_periodic = noperiodic,                // service to regular poll whether a byte ahs arrived
+        .protocol_macro = nullfunc4,                    // macro
+        .protocol_setup = n51_setup,                    // setup UI
+        .protocol_setup_exc = n51_setup_exc,            // real setup
+        .protocol_cleanup = n51_cleanup,                // cleanup for HiZ
+        //.protocol_pins=n51_pins,				        // display pin config
+        .protocol_settings = n51_settings,              // display settings
+        .protocol_help = n51_help,                      // display small help about the protocol
+        .mode_commands = n51_commands,                  // mode specific commands
+        .mode_commands_count = &n51_commands_count,     // mode specific commands count
+        .protocol_get_speed = nullfunc7_no_error,       // get the current speed setting of the protocol
+        .protocol_preflight_sanity_check = n51_preflight_sanity_check,      // sanity check before executing syntax
     },
 #endif
 #ifdef BP_USE_DUMMY1

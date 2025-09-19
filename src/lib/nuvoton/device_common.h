@@ -8,6 +8,7 @@ typedef struct _flash_info{
     uint32_t RAM_size;
     uint32_t DID;
     uint32_t Flash_type;
+    const char* name;
 } flash_info_t;
 #ifdef __cplusplus
 extern "C" {

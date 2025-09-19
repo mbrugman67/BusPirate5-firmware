@@ -347,6 +347,14 @@ set(buspirate_common
         lib/bluetag/src/blueTag.c
         lib/bluetag/src/blueTag.h
         lib/bluetag/src/jep106.inc
+
+        # N51
+        mode/nuvoton51.h
+        mode/nuvoton51.c
+        commands/nuvoton/n51_common.h
+        commands/nuvoton/n51_common.c
+        commands/nuvoton/config.h
+        commands/nuvoton/config.c
         lib/nuvoton/common/isp_common.h
         lib/nuvoton/buspirate.c
         lib/nuvoton/delay.h
