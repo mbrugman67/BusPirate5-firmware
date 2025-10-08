@@ -172,12 +172,21 @@ void n51_config_handler(struct command_result* res) {
 
     printf("Action: %d/%s, filename = %s\r\n", n51_cfg_action, n51_cfg_actions[n51_cfg_action].verb, file);
 
-    N51ICP_enter_icp_mode(true);
+    N51ICP_enter_icp_mode(false);
 
     if (get_device_id()) {
         printf("get_device_id() result %04x\r\n", n51_device_id);
     } else {
         printf("get_device_id() returns false!!\r\n");
+    }
+    if (n51_device_id == 0xffff) {
+        printf("trying glitchy reentry\r\n");
+        N51ICP_reentry(5000, 1000, 10);
+        if (get_device_id()) {
+            printf("get_device_id() result %04x\r\n", n51_device_id);
+        } else {
+            printf("get_device_id() returns false!!\r\n");
+        }
     }
 
     while (!button_get(0));

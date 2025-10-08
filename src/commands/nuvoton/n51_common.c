@@ -9,6 +9,7 @@ flash_info_t* n51_flash_info = NULL;
 uint32_t n51_device_id = -1;
 
 bool get_device_id(void) {
+    printf("get_device_id()\r\n");
     if (!N51PGM_is_init()) {
         printf("Programmer not init'd!\r\n");
         return (false);

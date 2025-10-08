@@ -56,6 +56,7 @@ uint8_t N51PGM_is_init()
 
 int N51PGM_init(void)
 {
+	printf("N51PGM_init()\r\n");
 	// allocate the 3 I/O points
     system_bio_update_purpose_and_label(true, M_NUV_RESET, BP_PIN_IO, pin_labels[0]);
     system_bio_update_purpose_and_label(true, M_NUV_CLOCK, BP_PIN_IO, pin_labels[1]);
@@ -80,12 +81,17 @@ int N51PGM_init(void)
 
 void N51PGM_set_dat(uint8_t val)
 {
+	bio_output(M_NUV_DATA);
+	//printf("N51PGM_set_dat(%d)\r\n", val);
 	bio_put(M_NUV_DATA, (bool)val);
 }
 
 uint8_t N51PGM_get_dat(void)
 {
-	return (bio_get(M_NUV_DATA));
+	bio_input(M_NUV_DATA);
+	uint8_t dat = (bio_get(M_NUV_DATA));
+	//printf("%d = N51PGM_get_dat()\r\n", dat);
+	return (dat);
 }
 
 void N51PGM_set_rst(uint8_t val)
@@ -96,6 +102,7 @@ void N51PGM_set_rst(uint8_t val)
 
 void N51PGM_set_clk(uint8_t val)
 {
+	//printf("N51PGM_set_clk(%d)\r\n", val);
 	bio_put(M_NUV_CLOCK, val);
 }
 
