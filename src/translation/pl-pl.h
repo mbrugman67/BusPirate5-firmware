@@ -569,5 +569,9 @@ static char const * const pl_pl[T_LAST_ITEM_ALWAYS_AT_THE_END]={
     [ T_HELP_DDR5_PATCH                ] = NULL,
     [ T_HELP_DDR5_FILE_FLAG            ] = NULL,
     [ T_HELP_DDR5_BLOCK_FLAG           ] = NULL,
+    [ T_HELP_I2C_I2CDUMP               ] = NULL,
+    [ T_HELP_I2C_I2CDUMP_ADDRESS       ] = NULL,
+    [ T_HELP_I2C_I2CDUMP_REG_WIDTH     ] = NULL,
+    [ T_HELP_I2C_I2CDUMP_REG_ADDR      ] = NULL,
 
 };

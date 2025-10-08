@@ -585,6 +585,10 @@ enum T_translations{
     T_HELP_DDR5_PATCH,
     T_HELP_DDR5_FILE_FLAG,
     T_HELP_DDR5_BLOCK_FLAG,
+    T_HELP_I2C_I2CDUMP,
+    T_HELP_I2C_I2CDUMP_ADDRESS,
+    T_HELP_I2C_I2CDUMP_REG_WIDTH,
+    T_HELP_I2C_I2CDUMP_REG_ADDR,
 
 	T_LAST_ITEM_ALWAYS_AT_THE_END //LEAVE THIS ITEM AT THE END!!! It helps the compiler report errors if there are missing translations
 };

@@ -16,8 +16,11 @@
 #include "commands/i2c/sniff.h"
 #include "ui/ui_term.h"
 #include "ui/ui_help.h"
-#include "commands/i2c/ddr.h"
+#include "commands/i2c/ddr5.h"
+#include "commands/i2c/ddr4.h"
 #include "commands/eeprom/eeprom_i2c.h"
+#include "commands/i2c/i2c.h"
+#include "commands/i2c/usbpdo.h"
 #include "commands/i2c/i2c.h"
 #include "commands/i2c/usbpdo.h"
 
@@ -93,10 +96,9 @@ const struct _mode_command_struct hwi2c_commands[] = {
     {
         .command="i2c",
         .func=&i2c_dump_handler,
-        .description_text=T_HELP_I2C_TCS34725,
+        .description_text=T_HELP_I2C_I2CDUMP,
         .supress_fala_capture=true
     },     
-
 };
 const uint32_t hwi2c_commands_count = count_of(hwi2c_commands);
 

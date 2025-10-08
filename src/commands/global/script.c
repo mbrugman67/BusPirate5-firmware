@@ -29,6 +29,7 @@ static const char* const usage[] = {
     "Script files are stored in text files with the .scr extension",
     "Lines starting with '#' are comments",
     "Other lines are inserted into the command prompt",
+    "Exit with 'x' during execution",
     "Example:",
     "# This is my example script file",
     "# The 'pause' command waits for any key press",
@@ -48,7 +49,12 @@ void script_handler(struct command_result* res) {
     bool show_comments = !cmdln_args_find_flag('d' | 0x20);
     bool exit_on_error = cmdln_args_find_flag('e' | 0x20);
     char location[32];
-    cmdln_args_string_by_position(1, sizeof(location), location);
+    if(!cmdln_args_string_by_position(1, sizeof(location), location)){
+        printf("Specify a script file to run\r\n");
+        ui_help_show(true, usage, count_of(usage), &options[0], count_of(options));
+        res->error = true;
+        return;
+    }
     if (script_exec(location, pause_for_input, show_comments, false, exit_on_error)) {
         res->error = true;
     }
@@ -93,22 +99,34 @@ bool script_exec(char* location, bool pause_for_input, bool show_comments, bool 
                 if (file[i] == '\r' || file[i] == '\n' || file[i] == '\0') {
                     break;
                 }
-                rx_fifo_add(&file[i]); // BUGBUG -- breaks FIFO queue only being added to by Core1
-                // cmdln_try_add(&file[i]);
-                // tx_fifo_put(&file[i]);
+                ui_term_cmdln_char_insert(&file[i]);
             }
-            // todo: x for exit
+            //mark end of command
+            cmdln_try_add(0x00);
+
             if (pause_for_input) {
-                while (ui_term_get_user_input() != 0xff)
-                    ; // user hit enter
-            } else {
-                while (ui_term_get_user_input() != 0)
-                    ; // nothing left to shove in the command prompt
+                //while (ui_term_get_user_input() != 0xff)
+                char c;
+                while(!rx_fifo_try_get(&c)); // user hit enter
+                if(c|0x20 == 'x') {
+                    printf("Script execution aborted by user\r\n");
+                    f_close(&fil);
+                    return false;
+                }
             }
+
             printf("\r\n");
             bool error = ui_process_commands();
             if (error && exit_on_error) {
                 return true;
+            }
+            char c;
+           if(rx_fifo_try_get(&c)){
+                if(c|0x20 == 'x') {
+                    printf("Script execution aborted by user\r\n");
+                    f_close(&fil);
+                    return false;
+                }            
             }
         }
     }

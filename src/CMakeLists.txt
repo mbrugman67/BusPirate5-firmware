@@ -185,8 +185,6 @@ set(buspirate_common
         commands/global/macro.h
         commands/global/script.c
         commands/global/script.h
-        commands/global/tutorial.c
-        commands/global/tutorial.h
         commands/global/button_scr.c
         commands/global/button_scr.h
         commands/global/smps.c
@@ -270,8 +268,10 @@ set(buspirate_common
         lib/tsl2561/driver_tsl2561.h
         commands/i2c/sniff.c 
         commands/i2c/sniff.h
-        commands/i2c/ddr.c
-        commands/i2c/ddr.h
+        commands/i2c/ddr5.c
+        commands/i2c/ddr5.h
+        commands/i2c/ddr4.c
+        commands/i2c/ddr4.h        
         commands/eeprom/eeprom_i2c.c 
         commands/eeprom/eeprom_i2c.h
         commands/i2c/i2c.c
@@ -373,8 +373,6 @@ set(buspirate_common
         mode/dummy1.h 
 
         # UI
-        ui/ui_button.c
-        ui/ui_button.h
         ui/ui_cmdln.c
         ui/ui_cmdln.h
         ui/ui_process.h
