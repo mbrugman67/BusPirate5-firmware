@@ -21,8 +21,6 @@
 #include "commands/eeprom/eeprom_i2c.h"
 #include "commands/i2c/i2c.h"
 #include "commands/i2c/usbpdo.h"
-#include "commands/i2c/i2c.h"
-#include "commands/i2c/usbpdo.h"
 
 static const char pin_labels[][5] = {
     "SDA",
