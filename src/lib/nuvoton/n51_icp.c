@@ -26,8 +26,14 @@
  */
 
 #include <stdint.h>
-#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include "pico/stdlib.h"
+
+#include "pirate.h"
+#include "pirate/bio.h"
+#include "system_config.h"
+
 #include "n51_icp.h"
 #include "n51_pgm.h"
 #ifndef DEFAULT_BIT_DELAY
@@ -123,21 +129,28 @@ static void N51ICP_bitsend(uint32_t data, int len, uint32_t udelay)
 {
 	N51PGM_dat_dir(1);
 	int i = len;
+	printf("N51ICP_bitsend (0x%04x, %d bits, %d delay): ", data, len, udelay);
 	while (i--) {
+			printf("%01d", (data >> i) & 1);
 			N51PGM_set_dat((data >> i) & 1);
-			USLEEP(udelay);
+			busy_wait_us(udelay);//  USLEEP(udelay);
 			N51PGM_set_clk(1);
-			USLEEP(udelay);
+			busy_wait_us(udelay); //USLEEP(udelay);
 			N51PGM_set_clk(0);
+			busy_wait_us(5); //USLEEP(udelay);
 	}
+
+	printf("\r\n");
 }
 
 static void N51ICP_send_command(uint8_t cmd, uint32_t dat)
 {
+	printf("N51ICP_send_command(0x%02x, %d)\r\n", cmd, dat);
 	N51ICP_bitsend((dat << 6) | cmd, 24, DEFAULT_BIT_DELAY);
 }
 
 int send_reset_seq(uint32_t reset_seq, int len){
+	printf("send_reset_seq(0x%04x, %d)\r\n", reset_seq, len);
 	for (int i = 0; i < len + 1; i++) {
 		N51PGM_set_rst((reset_seq >> (len - i)) & 1);
 		USLEEP(10000);
@@ -146,7 +159,8 @@ int send_reset_seq(uint32_t reset_seq, int len){
 }
 
 void N51ICP_send_entry_bits() {
-	N51ICP_bitsend(ENTRY_BITS, 24, ENTRY_BIT_DELAY);
+	N51ICP_bitsend(ENTRY_BITS, 24, ENTRY_BIT_DELAY); //ENTRY_BITS=0x5aa503
+
 }
 
 void N51ICP_send_exit_bits(){
@@ -181,8 +195,9 @@ uint32_t post_entry_set_times() {
 }
 
 uint32_t N51ICP_enter_icp_mode(uint8_t do_reset) {
+	printf("N51ICP_enter_icp_mode(%s)\r\n", do_reset ? "true" : "false");
 	if (do_reset) {
-		send_reset_seq(ICP_RESET_SEQ, 24);
+		send_reset_seq(ICP_RESET_SEQ, 24);  //ALT_RESET_SEQ  ICP_RESET_SEQ=0x9e1cb6
 		N51PGM_set_rst(0);
 	} else {
 		N51PGM_set_rst(1);
@@ -311,6 +326,7 @@ static void N51ICP_write_byte(uint8_t data, uint8_t end, uint32_t delay1, uint32
 
 uint32_t N51ICP_read_device_id(void)
 {
+	printf("N51ICP_read_device_id\r\n");
 	N51ICP_send_command(ICP_CMD_READ_DEVICE_ID, 0);
 
 	uint8_t devid[2];

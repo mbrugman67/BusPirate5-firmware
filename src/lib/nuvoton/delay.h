@@ -19,7 +19,7 @@
 #endif // F_CPU <= 16000000L
 #else  // F_CPU undefined
 // unknown target, just set to 2
-#define DEFAULT_BIT_DELAY 2
+#define DEFAULT_BIT_DELAY 20
 #endif // F_CPU
 
 #endif // RPI
