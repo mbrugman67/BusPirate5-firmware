@@ -229,6 +229,12 @@ static char const * const en_us[]={
 	[T_JTAG_BLUETAG_VERSION]="Show version",
 	[T_JTAG_BLUETAG_DISABLE]="Disable pin pulsing (JTAG mode)",
 	[T_JTAG_BLUETAG_DESCRIPTION]="Find JTAG and SWD pinouts",
+	// Nuvo51
+	[T_HELP_NUVO51_CFG]="Do stuff with Nuvoton config",
+	[T_NUVO51_READ_CFG]="Read Nuvoton config",
+	[T_NUVO51_WRITE_CFG]="Write Nuvoton config",
+	[T_NUVO51_ERASE_CFG]="Erase Nuvoton config",
+	[T_NUVO51_VERIFY_CFG]="Verify Nuvoton config",
 	//I2S
 	[T_I2S_SPEED_MENU]="Sample frequency",
 	[T_I2S_SPEED_MENU_1]="4000, 8000, 16000, 44100, 48000, 96000 etc",

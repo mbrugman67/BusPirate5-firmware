@@ -18,10 +18,11 @@
 #include "../commands/nuvoton/n51_common.h"
 #include "../commands/nuvoton/config.h"
 
+
 const struct _mode_command_struct n51_commands[] = {
-    {   .command="config", 
+    {
         .func=&n51_config_handler, 
-        .description_text=T_JTAG_BLUETAG_DESCRIPTION, 
+        .def=&n51_cmd_def,
         .supress_fala_capture=true
     },
  

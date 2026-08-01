@@ -662,7 +662,7 @@ struct _mode modes[] = {
 #endif
 #ifdef BP_USE_N51
     [N51] = {
-        .protocol_name = "Nuvo8051",                   // friendly name (promptname)
+        .protocol_name = "Nuvo51",                      // friendly name (promptname)
         .protocol_start = nullfunc1_temp,               // start
         .protocol_start_alt = nullfunc1_temp,           // start with read
         .protocol_stop = nullfunc1_temp,                // stop

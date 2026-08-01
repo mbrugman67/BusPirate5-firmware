@@ -56,7 +56,7 @@ uint8_t N51PGM_is_init()
 
 int N51PGM_init(void)
 {
-	printf("N51PGM_init()\r\n");
+	printf("\r\nN51PGM_init()\r\n");
 	// allocate the 3 I/O points
     system_bio_update_purpose_and_label(true, M_NUV_RESET, BP_PIN_IO, pin_labels[0]);
     system_bio_update_purpose_and_label(true, M_NUV_CLOCK, BP_PIN_IO, pin_labels[1]);

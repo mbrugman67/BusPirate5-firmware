@@ -6,13 +6,22 @@
 #include "command_struct.h"
 #include "ui/ui_term.h"
 #include "ui/ui_help.h"
-#include "ui/ui_cmdln.h"
 #include "ui/ui_prompt.h"
 #include "pirate/button.h"
+#include "lib/bp_args/bp_cmd.h"
+#include "fatfs/ff.h"
+#include "pirate/file.h"
 
 #include "./n51_common.h"
 #include "./config.h"
 
+
+// ============================================================================
+// ACTIONS / SUBCOMMANDS
+// ============================================================================
+// Actions are the first non-flag token after the command name.
+// They are matched by bp_cmd_get_action() and returned as an enum value.
+// This replaces manual strcmp() parsing of positional arguments.
 enum n51_cfg_action {
     N51_CFG_READ = 0,
     N51_CFG_WRITE,
@@ -20,30 +29,38 @@ enum n51_cfg_action {
     N51_CFG_VERIFY
 };
 
-const struct cmdln_action_t n51_cfg_actions[] = {
-    { N51_CFG_READ, "read" },
-    { N51_CFG_WRITE, "write" },
-    { N51_CFG_ERASE, "erase"},
-    { N51_CFG_VERIFY, "verify" }
+static const bp_command_action_t n51_cfg_actions[] = {
+    { N51_CFG_READ, "read", T_NUVO51_READ_CFG },
+    { N51_CFG_WRITE, "write", T_NUVO51_WRITE_CFG },
+    { N51_CFG_ERASE, "erase", T_NUVO51_ERASE_CFG },
+    { N51_CFG_VERIFY, "verify", T_NUVO51_VERIFY_CFG }
 };
+
 
 static const char* const usage[] = {
-    "config [read|write|erase|verify] [-f <file>]",
-    "Read config:%s read",
-    "Read config and save to file:%s read -f cfg.dat",
-    "Write config from file:%s write -f cfg.dat",
-    "Verify config contents with file data:%s verify -f cfg.dat"
+    "config [read|write|erase|verify] <file>",
+    "Read config:%s read cfg.dat",
+    "Read config and save to file:%s read cfg.dat",
+    "Write config from file:%s write cfg.dat",
+    "Verify config contents with file data:%s verify cfg.dat"
 };
 
-static const struct ui_help_options options[] = {
-    { 1, "", T_HELP_FLASH },               // flash command help
-    //{ 0, "init", T_HELP_FLASH_INIT },      // init
-    { 0, "read", T_HELP_FLASH_PROBE },    // probe
-    { 0, "write", T_HELP_EEPROM_DUMP }, // dump
-    { 0, "erase", T_HELP_FLASH_ERASE },    // erase
-    { 0, "verify", T_HELP_FLASH_WRITE }
+static const bp_command_positional_t n51_positionals[] = {
+    { "file",  NULL, T_HELP_GCMD_DUMP_FILE, true  },
+    { 0 }
 };
 
+const bp_command_def_t n51_cmd_def = {
+    .name = "config",
+    .description = T_HELP_NUVO51_CFG,
+    .actions = n51_cfg_actions,
+    .action_count = count_of(n51_cfg_actions),
+    .opts = NULL,
+    .positionals = n51_positionals,
+    .positional_count = 1,
+    .usage = usage,
+    .usage_count = count_of(usage),
+};
 
 void N51ICP_print_config(config_flags flags, uint32_t flash_size){
   N51ICP_outputf("----- Chip Configuration ----\n");
@@ -142,35 +159,32 @@ void print_device_info(device_info info){
 }
 
 void n51_config_handler(struct command_result* res) {
-    PRINT_INFO("n51::Starting n51 config handler\r\n");
-
-    if (ui_help_show(res->help_flag, usage, count_of(usage), &options[0], count_of(options))) {
-        return;
+    // we can use the ui_help_show function to display the help text we configured above
+    if (bp_cmd_help_check(&n51_cmd_def, res->help_flag)) {
+        goto display_help;
     }
 
     if (!ui_help_check_vout_vref()) {
-        return;
+        goto display_help;
     }
 
     printf("\r\n%sNuvoton 8051 ICP programmer - config handler.%s\r\n",
         ui_term_color_info(), ui_term_color_reset());
 
-    uint32_t n51_cfg_action = 0;
-    // common function to parse the command line verb or action
-    if(cmdln_args_get_action(n51_cfg_actions, count_of(n51_cfg_actions), &n51_cfg_action)){
-        ui_help_show(true, usage, count_of(usage), &options[0], count_of(options)); // show help if requested
-        return;
+    // parse command line
+    uint32_t n51_cfg_action = N51_CFG_READ; // default action
+    if (!bp_cmd_get_action(&n51_cmd_def, &n51_cfg_action)) {
+        bp_cmd_help_show(&n51_cmd_def);
+        goto display_help;
     }
 
-    char file[13] = {'\0'};
-    command_var_t arg;
-    bool file_flag = cmdln_args_find_flag_string('f' | 0x20, &arg, sizeof(file), file);
-    if((n51_cfg_action == N51_CFG_VERIFY || n51_cfg_action == N51_CFG_WRITE) && !file_flag) {
-        printf("Missing file name (-f)\r\n");
-        return;
+    // get filename argument
+    char filename[13];
+    if (!bp_file_get_name_positional(&n51_cmd_def, 2, filename, sizeof(filename))) {
+        goto display_help;
     }
 
-    printf("Action: %d/%s, filename = %s\r\n", n51_cfg_action, n51_cfg_actions[n51_cfg_action].verb, file);
+    printf("Action: %d/%s, filename = %s\r\n", n51_cfg_action, n51_cfg_actions[n51_cfg_action].verb, filename);
 
     N51ICP_enter_icp_mode(false);
 
@@ -192,5 +206,10 @@ void n51_config_handler(struct command_result* res) {
     while (!button_get(0));
     
     N51ICP_exit_icp_mode();
+
+    return;
+
+display_help:
+    bp_cmd_help_show(&n51_cmd_def);
 }
 
