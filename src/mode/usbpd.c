@@ -27,7 +27,6 @@ const struct _mode_command_struct usbpd_commands[] = {
   {
     .command="sniff",
     .func=&usbpd_sniff,
-    .description_text=T_I2C_SNIFF,
     .supress_fala_capture=true
   },    
 };
@@ -47,7 +46,7 @@ uint32_t usbpd_setup_exc(void) {
   }
 
   // 5V power on
-  psucmd_enable(5.0, 20.0, false);
+  psucmd_enable(5.0, 20.0, false, 100);
 
   sleep_ms(500);
 
@@ -75,7 +74,7 @@ void usbpd_cleanup(void) {
 void usbpd_help(void) {
   printf("USBPD Plank\r\n");
 
-  ui_help_mode_commands(usbpd_commands, usbpd_commands_count);
+  //ui_help_mode_commands(usbpd_commands, usbpd_commands_count);
 }
 
 void usbpd_settings(void) {

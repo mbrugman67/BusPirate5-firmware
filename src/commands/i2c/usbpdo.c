@@ -29,7 +29,7 @@
 #include "bytecode.h"
 #include "mode/hwi2c.h"
 #include "ui/ui_help.h"
-#include "ui/ui_cmdln.h"
+#include "lib/bp_args/bp_cmd.h"
 #include "binmode/fala.h"
 #include "commands/i2c/usbpdo.h"
 #include "usb_rx.h"
@@ -66,7 +66,7 @@ static uint8_t pdo_msg_id = 0;
 
 // FUSB302 I2C read/write helper functions
 static bool fusb_write_reg(uint8_t reg, uint8_t value) {
-    if (i2c_write(FUSB302B_ADDR, (uint8_t[]){ reg, value }, 2u)) {
+    if (i2c_write(FUSB302B01_ADDR, (uint8_t[]){ reg, value }, 2u)) {
         return true;
     }
     return false;
@@ -74,22 +74,22 @@ static bool fusb_write_reg(uint8_t reg, uint8_t value) {
 
 static bool fusb_read_reg(uint8_t reg, uint8_t* value) {
     // setup the register to read
-    if (i2c_write(FUSB302B_ADDR, (uint8_t[]){ reg }, 1u)) {
+    if (i2c_write(FUSB302B01_ADDR, (uint8_t[]){ reg }, 1u)) {
         return true;
     }
     // read the register
-    if (i2c_read((FUSB302B_ADDR) | 1, value, 1u)) {
+    if (i2c_read((FUSB302B01_ADDR) | 1, value, 1u)) {
         return true;
     }
     return false;
 }
 
 static bool fusb_read_fifo(uint8_t* buffer, uint8_t length) {
-    if (i2c_write(FUSB302B_ADDR, (uint8_t[]){ FUSB_FIFOS }, 1u)) {
+    if (i2c_write(FUSB302B01_ADDR, (uint8_t[]){ FUSB_FIFOS }, 1u)) {
         return true;
     }
 
-    if (i2c_read((FUSB302B_ADDR) | 1, buffer, length)) {
+    if (i2c_read((FUSB302B01_ADDR) | 1, buffer, length)) {
         return true;
     }
     return false;
@@ -104,7 +104,7 @@ bool fusb_write_fifo(const uint8_t* buffer, uint8_t length) {
 
     data[0] = FUSB_FIFOS;
     memcpy(&data[1], buffer, length);
-    if (i2c_write(FUSB302B_ADDR, data, length + 1)) {
+    if (i2c_write(FUSB302B01_ADDR, data, length + 1)) {
         return true;
     }
     return false;
@@ -614,24 +614,31 @@ static const char* const usage[] = {
     "scan and select PDO profiles:%s fusb302 scan"
 };
 
-static const struct ui_help_options options[] = {
-        {1,"", T_HELP_I2C_FUSB302},
-        {0,"status", T_HELP_I2C_FUSB302_STATUS},
-        {0,"scan", T_HELP_I2C_FUSB302_SCAN},
-};
-
 enum fusb_actions_enum {
     FUSB302_STATUS=0,
     FUSB302_SCAN,
 };
 
-static const struct cmdln_action_t fusb_actions[] = {{ FUSB302_STATUS, "status" },{ FUSB302_SCAN, "scan" }};
+static const bp_command_action_t fusb_action_defs[] = {
+    { FUSB302_STATUS, "status", T_HELP_I2C_FUSB302_STATUS },
+    { FUSB302_SCAN,   "scan",   T_HELP_I2C_FUSB302_SCAN },
+};
+
+const bp_command_def_t fusb302_def = {
+    .name         = "fusb302",
+    .description  = T_HELP_I2C_FUSB302,
+    .actions      = fusb_action_defs,
+    .action_count = count_of(fusb_action_defs),
+    .opts         = NULL,
+    .usage        = usage,
+    .usage_count  = count_of(usage),
+};
 
 void fusb302_handler(struct command_result* res) {
     static pdo_info_t available_pdos[7];
     static uint8_t num_available_pdos = 0;
 
-    if (ui_help_show(res->help_flag, usage, count_of(usage), &options[0], count_of(options))) {
+    if (bp_cmd_help_check(&fusb302_def, res->help_flag)) {
         return;
     }
     if (!ui_help_sanity_check(true, 0x00)) {
@@ -639,8 +646,8 @@ void fusb302_handler(struct command_result* res) {
     }
 
     uint32_t action;
-    if (cmdln_args_get_action(fusb_actions, count_of(fusb_actions), &action)) {
-        ui_help_show(true, usage, count_of(usage), &options[0], count_of(options));
+    if (!bp_cmd_get_action(&fusb302_def, &action)) {
+        bp_cmd_help_show(&fusb302_def);
         return;
     }
 

@@ -4,9 +4,7 @@
 #include "system_config.h"
 #include "command_struct.h"
 #include "ui/ui_term.h"
-#include "ui/ui_prompt.h"
-#include "ui/ui_parse.h"
-#include "ui/ui_cmdln.h"
+#include "lib/bp_args/bp_cmd.h"
 #include "ui/ui_help.h"
 #include "pico/multicore.h"
 #include "pirate/storage.h"
@@ -36,19 +34,8 @@ bool selftest_rp2350_e9_fix(void){
 }
 
 bool selftest_format_nand(void) {
-    uint32_t value;
-    struct prompt_result presult;
     if (!system_config.storage_available) {
-        printf("No file system!\r\nFormat the Bus Pirate NAND flash?\r\nALL DATA WILL BE DESTROYED.\r\n y/n> ");
-        cmdln_next_buf_pos();
-        while (1) {
-            ui_prompt_vt100_mode(&presult, &value);
-            if (presult.success) {
-                break;
-            }
-        }
-        printf("\r\n\r\n");
-        if (value == 'y') {
+        if (bp_cmd_confirm(NULL, "No file system!\r\nFormat the Bus Pirate NAND flash?\r\nALL DATA WILL BE DESTROYED.")) {
             uint8_t fr = storage_format();
             if (fr) {
                 storage_file_error(fr);
@@ -92,7 +79,7 @@ bool selftest_psu(float volts, float current, bool current_limit_override) {
     // psu test
     // psu to 1.8, 2.5, 3.3, 5.0 volt test
     printf("PSU ENABLE: ");
-    uint32_t result = psu_enable(volts, current, current_limit_override);
+    uint32_t result = psu_enable(volts, current, current_limit_override, 100);
     if (result) {
         printf("PSU ERROR CODE %d\r\n", result);
         return true;
@@ -321,7 +308,7 @@ bool selftest_current_override(void) {
     // 1. Test with current override
     pullup_enable();
     printf("CURRENT OVERRIDE: ");
-    uint32_t result = psu_enable(3.3, 0, true);
+    uint32_t result = psu_enable(3.3, 0, true, 100);
     if (result == 0) {
         printf("OK\r\n");
     } else {
@@ -340,7 +327,7 @@ bool selftest_current_limit(void) {
         bio_put(pin, 0);
     }
     // 2. Enable wth 0 limit and check the return error code of the PSU
-    uint32_t result = psu_enable(3.3, 0, false);
+    uint32_t result = psu_enable(3.3, 0, false, 100);
     if (result == PSU_ERROR_FUSE_TRIPPED) {
         printf("OK\r\n");
     } else {
@@ -374,7 +361,7 @@ bool selftest_button(void) {
     }
 
     busy_wait_ms(DEBOUNCE_DELAY_MS);
-    printf("PUSH BUTTON (SPACE TO SKIP): ");
+    printf("\r\nPUSH BUTTON (SPACE TO SKIP): ");
     // then wait for button to be released
     while (true){
         if(!button_get(0)){
@@ -559,11 +546,13 @@ void cmd_selftest(void) {
     if (fails) {
         printf("\r\nERRORS: %d\r\nFAIL! :(\r\n", fails);
     } else {
-        printf("\r\n\r\nPASS :)\r\n");
+        printf("\r\nPASS :)\r\n");
     }
 
-    system_config.psu_current_error = false;
-    system_config.psu_error = false;
+    psu_status.enabled = false;
+    psu_status.error_overcurrent = false;
+    psu_status.error_undervoltage = false;
+    psu_status.error_pending = false;
     system_config.error = false;
 
     // enable system interrupts
@@ -577,15 +566,19 @@ static const char* const usage[] = {
     "Warning:%s Self-test is only available in HiZ mode",
 };
 
-static const struct ui_help_options options[] = {
-    { 1, "", T_HELP_GCMD_SELFTEST }, // command help
-    { 0, "~", T_HELP_GCMD_SELFTEST_CMD },
-    { 0, "-h", T_HELP_GCMD_SELFTEST_H_FLAG },
+const bp_command_def_t cmd_selftest_def = {
+    .name         = "~",
+    .description  = T_HELP_GCMD_SELFTEST,
+    .actions      = NULL,
+    .action_count = 0,
+    .opts         = NULL,
+    .usage        = usage,
+    .usage_count  = count_of(usage),
 };
 
 void cmd_selftest_handler(struct command_result* res) {
     // check help
-    if (ui_help_show(res->help_flag, usage, count_of(usage), &options[0], count_of(options))) {
+    if (bp_cmd_help_check(&cmd_selftest_def, res->help_flag)) {
         return;
     }
 
